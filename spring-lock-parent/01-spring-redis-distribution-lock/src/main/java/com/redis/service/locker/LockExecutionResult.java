@@ -1,5 +1,6 @@
 package com.redis.service.locker;
 
+
 public class LockExecutionResult<T> {
     private final boolean lockAcquired;
     public final T resultIfLockAcquired;
@@ -34,4 +35,12 @@ public class LockExecutionResult<T> {
     public boolean hasException() {
         return exception != null;
     }
+
+	@Override
+	public String toString() {
+		return "LockExecutionResult [lockAcquired=" + lockAcquired + ", resultIfLockAcquired=" + resultIfLockAcquired
+				+ ", exception=" + exception + "]";
+	}
+    
+    
 }

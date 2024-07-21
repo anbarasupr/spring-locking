@@ -1,6 +1,9 @@
 package com.redis.service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,21 +32,55 @@ public class PlaygroundService {
 //        CompletableFuture.runAsync(() -> runTask("2", 1000));
 //        CompletableFuture.runAsync(() -> runTask("3", 100));
 
-		CompletableFuture.runAsync(() -> runTask("Task1", 3000));
+		List<CompletableFuture<Void>> futuresList = new ArrayList<>();
+		for (int i = 0; i < 20; i++) {
+			String taskId = "Task-" + i;
+			int executionTime = 500;
+			CompletableFuture<Void> c = CompletableFuture.runAsync(() -> runTask(taskId, executionTime));
+			futuresList.add(c);
+		}
+		
+		CompletableFuture<List<Void>> finalList = allOf(futuresList);
+		finalList.whenComplete((result, ex) -> System.out.println("result: "+result));
+		//.exceptionally(ex->	 System.out.println("ex: "+ex));
+
+//		CompletableFuture<Void> allFuturesResult = CompletableFuture
+//				.allOf(futuresList.toArray(new CompletableFuture[futuresList.size()]));
+//		CompletableFuture<List<Void>> list = allFuturesResult
+//				.thenApply(v -> futuresList.stream().map(future -> future.join()).collect(Collectors.toList()));
+//		CompletableFuture.runAsync(() -> runTask("Task1", 3000));
 //        CompletableFuture.runAsync(() -> runTask("Task2", 1000));
-//        CompletableFuture.runAsync(() -> runTask("3", 100));
+//        CompletableFuture.runAsync(() -> runTask("Task3", 100));
+//		CompletableFuture.runAsync(() -> runTask("Task4", 3000));
+//        CompletableFuture.runAsync(() -> runTask("Task5", 1000));
+//        CompletableFuture.runAsync(() -> runTask("Task6", 100));
+//		CompletableFuture.runAsync(() -> runTask("Task7", 3000));
+//        CompletableFuture.runAsync(() -> runTask("Task8", 1000));
+//        CompletableFuture.runAsync(() -> runTask("Task9", 100));
+//		CompletableFuture.runAsync(() -> runTask("Task10", 3000));
+//        CompletableFuture.runAsync(() -> runTask("Task11", 1000));
+//        CompletableFuture.runAsync(() -> runTask("Task12", 100));
 	}
 
-	private void runTask(final String taskNumber, final long sleep) {
+	public <T> CompletableFuture<List<T>> allOf(List<CompletableFuture<T>> futuresList) {
+		CompletableFuture<Void> allFuturesResult = CompletableFuture
+				.allOf(futuresList.toArray(new CompletableFuture[futuresList.size()]));
+		return allFuturesResult
+				.thenApply(v -> futuresList.stream().map(future -> future.join()).collect(Collectors.<T>toList()));
+	}
+
+	private LockExecutionResult<String> runTask(final String taskNumber, final long sleep) {
 		LOG.info("Running task : '{}'", taskNumber);
 
-		LockExecutionResult<String> result = locker.lock("some-key", 5, 6, () -> {
-			LOG.info("Task {} Processing for '{}' ms", taskNumber, sleep);
-			Thread.sleep(sleep);
-			LOG.info("Task {} Processing Completed... for '{}' ms", taskNumber, sleep);
+		// 5 - Retry Timeout
+		// 6 - Lock key Expiry /Timeout
+		LockExecutionResult<String> result = locker.lock("some-key", 60, 6, () -> {
+			LOG.info("Task {} Processing............. for '{}' ms", taskNumber, sleep);
+			Thread.sleep(sleep * 1000);
+			LOG.info("Task {} Processing Completed............. for '{}' ms", taskNumber, sleep);
 			return taskNumber;
 		});
-
-		LOG.info("Task result : '{}' -> exception : '{}'", result.getResultIfLockAcquired(), result.hasException());
+		return result;
+		//LOG.info("Task result : '{}' -> exception : '{}'", result.getResultIfLockAcquired(), result.hasException());
 	}
 }

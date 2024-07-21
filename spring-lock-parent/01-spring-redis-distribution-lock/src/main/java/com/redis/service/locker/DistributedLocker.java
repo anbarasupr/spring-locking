@@ -13,7 +13,7 @@ import java.util.function.Supplier;
 @Service
 public class DistributedLocker {
     private static final Logger LOG = LoggerFactory.getLogger(DistributedLocker.class);
-    private static final long DEFAULT_RETRY_TIME = 100L;
+    private static final long DEFAULT_RETRY_TIME = 300L;
     private final ValueOperations<String, String> valueOps;
 
     public DistributedLocker(final RedisTemplate<String, String> redisTemplate) {
@@ -28,7 +28,7 @@ public class DistributedLocker {
             return tryToGetLock(() -> {
                 final Boolean lockAcquired = valueOps.setIfAbsent(key, key, lockTimeoutSeconds, TimeUnit.SECONDS);
                 if (lockAcquired == Boolean.FALSE) {
-                    LOG.error("Failed to acquire lock for key '{}', Thread: {}", key, Thread.currentThread().getName());
+                    //LOG.error("Failed to acquire lock for key '{}', Thread: {}", key, Thread.currentThread().getName());
                     return null;
                 }
 
@@ -39,7 +39,7 @@ public class DistributedLocker {
                     return LockExecutionResult.buildLockAcquiredResult(taskResult);
                 } catch (Exception e) {
                     LOG.error(e.getMessage(), e);
-                    LOG.info("Failure to acquire Lock for key '{}, Thread: {}'", key, Thread.currentThread().getName());
+                    // LOG.info("Failure to acquire Lock for key '{}, Thread: {}'", key, Thread.currentThread().getName());
                     return LockExecutionResult.buildLockAcquiredWithException(e);
                 } finally {
                     releaseLock(key);
@@ -63,7 +63,7 @@ public class DistributedLocker {
 
         final long startTimestamp = System.currentTimeMillis();
         while (true) {
-            LOG.info("Trying to get the lock with key '{}, Thread: {}'", lockKey, Thread.currentThread().getName());
+            //LOG.info("Trying to get the lock with key '{}, Thread: {}'", lockKey, Thread.currentThread().getName());
 
             final T response = task.get();
             // LOG.info("Getting the Result for key '{}, Thread: {}'", lockKey, Thread.currentThread().getName());
@@ -77,7 +77,7 @@ public class DistributedLocker {
                 LOG.info("Retrying Timout exceeded to get the lock with key '{}, Thread: {}'", lockKey, Thread.currentThread().getName());
                 throw new Exception("Failed to acquire lock in " + tryToGetLockTimeout + " milliseconds");
             }
-            LOG.info("Retrying again to get the lock with key '{}, Thread: {}'", lockKey, Thread.currentThread().getName());
+           // LOG.info("Retrying again to get the lock with key '{}, Thread: {}'", lockKey, Thread.currentThread().getName());
 
         }
     }
