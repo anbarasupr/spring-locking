@@ -1,0 +1,17 @@
+server:
+  port: 12354
+redis:
+  host: ${REDIS.HOST}
+spring:
+  profiles:
+    active: jdbc
+  datasource:
+    url: jdbc:postgresql://${POSTGRES.HOST}:${POSTGRES.PORT:5432}/${POSTGRES.SCHEMA}
+    username: user
+    password: password
+  flyway:
+    locations:
+      - classpath:sql
+    sqlMigrationPrefix: v
+  h2:
+    console.enabled: true
