@@ -3,6 +3,7 @@ package com.redis.service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -32,16 +33,19 @@ public class PlaygroundService {
 //        CompletableFuture.runAsync(() -> runTask("2", 1000));
 //        CompletableFuture.runAsync(() -> runTask("3", 100));
 
-		List<CompletableFuture<Void>> futuresList = new ArrayList<>();
-		for (int i = 0; i < 20; i++) {
+		List<CompletableFuture<LockExecutionResult<String>>> futuresList = new ArrayList<>();
+		for (int i = 0; i < 10; i++) {
 			String taskId = "Task-" + i;
-			int executionTime = 500;
-			CompletableFuture<Void> c = CompletableFuture.runAsync(() -> runTask(taskId, executionTime));
+			int executionTime = 9;//ThreadLocalRandom.current().nextInt(4, 5);
+			CompletableFuture<LockExecutionResult<String>> c = CompletableFuture.supplyAsync(() -> runTask(taskId, executionTime));
 			futuresList.add(c);
 		}
 		
-		CompletableFuture<List<Void>> finalList = allOf(futuresList);
-		finalList.whenComplete((result, ex) -> System.out.println("result: "+result));
+		CompletableFuture<List<LockExecutionResult<String>>> finalList = allOf(futuresList);
+		finalList.whenComplete((result, ex) -> {
+			System.out.println("result: "+result);
+			System.out.println("ex: "+ex);
+		});
 		//.exceptionally(ex->	 System.out.println("ex: "+ex));
 
 //		CompletableFuture<Void> allFuturesResult = CompletableFuture
@@ -74,8 +78,9 @@ public class PlaygroundService {
 
 		// 5 - Retry Timeout
 		// 6 - Lock key Expiry /Timeout
-		LockExecutionResult<String> result = locker.lock("some-key", 60, 6, () -> {
-			LOG.info("Task {} Processing............. for '{}' ms", taskNumber, sleep);
+		// sleep - Task execution time
+		LockExecutionResult<String> result = locker.lock("some-key", 60, 10, () -> {
+			LOG.info("Task {} Processing............. for '{}' sec", taskNumber, sleep);
 			Thread.sleep(sleep * 1000);
 			LOG.info("Task {} Processing Completed............. for '{}' ms", taskNumber, sleep);
 			return taskNumber;
