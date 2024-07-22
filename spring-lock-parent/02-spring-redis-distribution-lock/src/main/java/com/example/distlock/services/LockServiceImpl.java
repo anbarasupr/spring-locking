@@ -16,6 +16,7 @@ public abstract class LockServiceImpl implements LockService{
 
     protected LockServiceImpl(LockRegistry lockRegistry) {
         this.lockRegistry = lockRegistry;
+        
     }
 
     protected String lock(Time wait, String type){

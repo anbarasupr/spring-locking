@@ -14,4 +14,6 @@ public interface BalanceRepository extends JpaRepository<Balance, Integer> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Balance> findBalanceByOwner(String owner);
 
+	// Optional<Balance> findbyOwner(String owner);
+
 }
